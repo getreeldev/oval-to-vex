@@ -80,23 +80,23 @@ func TestStatusForClass(t *testing.T) {
 	}
 }
 
-func TestCollectCVEs_Dedupes(t *testing.T) {
-	def := &oval.Definition{
-		Metadata: oval.Metadata{
+func TestCollectRedHatCVEs_Dedupes(t *testing.T) {
+	def := &oval.RedHatDefinition{
+		Metadata: oval.RedHatMetadata{
 			References: []oval.Reference{
 				{RefID: "CVE-2024-1", Source: "CVE"},
 				{RefID: "RHSA-2024:1234", Source: "RHSA"},
 				{RefID: "CVE-2024-2", Source: "CVE"},
 			},
-			Advisory: oval.Advisory{
-				CVEs: []oval.CVE{
+			Advisory: oval.RedHatAdvisory{
+				CVEs: []oval.RedHatCVE{
 					{ID: "CVE-2024-1"}, // dup
 					{ID: "CVE-2024-3"},
 				},
 			},
 		},
 	}
-	got := collectCVEs(def)
+	got := collectRedHatCVEs(def)
 	want := []string{"CVE-2024-1", "CVE-2024-2", "CVE-2024-3"}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
@@ -108,21 +108,21 @@ func TestCollectCVEs_Dedupes(t *testing.T) {
 	}
 }
 
-func TestFromDocument_EmptyAdvisorySkipped(t *testing.T) {
-	doc := &oval.Document{
-		Definitions: oval.Definitions{
-			Definitions: []oval.Definition{
+func TestFromRedHatDocument_EmptyAdvisorySkipped(t *testing.T) {
+	doc := &oval.RedHatDocument{
+		Definitions: oval.RedHatDefinitions{
+			Definitions: []oval.RedHatDefinition{
 				{
 					ID:       "oval:x:def:1",
 					Class:    "patch",
-					Metadata: oval.Metadata{
+					Metadata: oval.RedHatMetadata{
 						// No CVE references, no CPEs.
 					},
 				},
 			},
 		},
 	}
-	stmts := fromDocument(doc)
+	stmts := fromRedHatDocument(doc)
 	if len(stmts) != 0 {
 		t.Errorf("expected 0 statements for advisory with no CVEs/CPEs, got %d", len(stmts))
 	}

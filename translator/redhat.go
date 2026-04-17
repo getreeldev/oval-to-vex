@@ -29,16 +29,17 @@ import (
 // RPM-level statements (with version-range comparison and criteria-tree
 // evaluation) are out of v0.1.0 scope — deferred to v0.2.0.
 func FromRedHatOVAL(r io.Reader) ([]Statement, error) {
-	doc, err := oval.Decode(r)
+	doc, err := oval.DecodeRedHat(r)
 	if err != nil {
 		return nil, err
 	}
-	return fromDocument(doc), nil
+	return fromRedHatDocument(doc), nil
 }
 
-// fromDocument walks the parsed document and emits Statements. Split from
-// FromRedHatOVAL so tests can construct Documents directly.
-func fromDocument(doc *oval.Document) []Statement {
+// fromRedHatDocument walks the parsed Red Hat document and emits
+// Statements. Split from FromRedHatOVAL so tests can construct documents
+// directly without going through XML decode.
+func fromRedHatDocument(doc *oval.RedHatDocument) []Statement {
 	var out []Statement
 	for i := range doc.Definitions.Definitions {
 		def := &doc.Definitions.Definitions[i]
@@ -46,7 +47,7 @@ func fromDocument(doc *oval.Document) []Statement {
 		if !ok {
 			continue
 		}
-		cves := collectCVEs(def)
+		cves := collectRedHatCVEs(def)
 		cpes := def.Metadata.Advisory.AffectedCPEList.CPEs
 		if len(cves) == 0 || len(cpes) == 0 {
 			continue
@@ -69,6 +70,7 @@ func fromDocument(doc *oval.Document) []Statement {
 
 // statusForClass maps an OVAL definition class to a VEX status. The
 // second return value is false when the class is unknown / unsupported.
+// Kept at package level (not RH-specific) so future vendors can reuse.
 func statusForClass(class string) (string, bool) {
 	switch class {
 	case "patch":
@@ -80,15 +82,15 @@ func statusForClass(class string) (string, bool) {
 	}
 }
 
-// collectCVEs gathers unique CVE IDs from a Definition. Red Hat puts them
-// in two places that can overlap:
+// collectRedHatCVEs gathers unique CVE IDs from a Red Hat definition.
+// Red Hat puts them in two places that can overlap:
 //
 //   - <metadata>/<reference source="CVE"> — one per CVE
 //   - <metadata>/<advisory>/<cve> — one per CVE with CVSS + CWE attrs
 //
 // We read both and dedupe by CVE ID so callers don't get duplicate
 // statements when the same CVE appears in both.
-func collectCVEs(def *oval.Definition) []string {
+func collectRedHatCVEs(def *oval.RedHatDefinition) []string {
 	seen := make(map[string]struct{})
 	var out []string
 	add := func(id string) {
