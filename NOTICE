@@ -1,0 +1,26 @@
+oval-to-vex
+Copyright 2026 getreeldev
+
+This product includes software developed by getreeldev.
+
+Prior art acknowledgements
+--------------------------
+
+The OVAL parsing and Red Hat advisory-extraction logic in this library was
+informed by reading two Apache-2.0-licensed codebases from the Aqua Security
+project:
+
+  * aquasecurity/trivy-db
+    Specifically pkg/vulnsrc/redhat-oval — the Red Hat OVAL consumer inside
+    trivy-db's build pipeline.
+    https://github.com/aquasecurity/trivy-db
+
+  * aquasecurity/vuln-list-update
+    Specifically redhat/oval — the Red Hat OVAL fetcher + normaliser.
+    https://github.com/aquasecurity/vuln-list-update
+
+oval-to-vex is not derived from these projects. Their source was read as
+prior art to understand the Red Hat OVAL feed's quirks. No code was copied.
+This library's output shape (VEX-style Statements) differs from trivy-db's
+BoltDB schema, and its fetch model differs from vuln-list-update's
+filesystem-based pipeline.
