@@ -1,0 +1,130 @@
+<?xml version="1.0" ?>
+<oval_definitions
+    xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5"
+    xmlns:ind="http://oval.mitre.org/XMLSchema/oval-definitions-5#independent"
+    xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5"
+    xmlns:unix="http://oval.mitre.org/XMLSchema/oval-definitions-5#unix"
+    xmlns:linux="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <generator>
+        <oval:product_name>Canonical USN OVAL Generator</oval:product_name>
+        <oval:product_version>1</oval:product_version>
+        <oval:schema_version>5.11.1</oval:schema_version>
+        <oval:timestamp>2026-04-23T10:19:35</oval:timestamp>
+    </generator>
+
+    <definitions>
+
+        <!-- Inventory definition: should be skipped (class != patch). -->
+        <definition class="inventory" id="oval:com.ubuntu.noble:def:100" version="1">
+            <metadata>
+                <title>Check that Ubuntu 24.04 LTS (noble) is installed.</title>
+                <description></description>
+            </metadata>
+            <criteria>
+                <criterion test_ref="oval:com.ubuntu.noble:tst:100" comment="The host is part of the unix family." />
+                <criterion test_ref="oval:com.ubuntu.noble:tst:101" comment="The host is running Ubuntu 24.04 LTS (noble)." />
+            </criteria>
+        </definition>
+
+        <!-- USN-6663-3: class=patch but no CVE references — should be skipped. -->
+        <definition id="oval:com.ubuntu.noble:def:66633000000" version="1" class="patch">
+            <metadata>
+                <title>USN-6663-3 -- OpenSSL update</title>
+                <affected family="unix">
+                    <platform>Ubuntu 24.04 LTS</platform>
+                </affected>
+                <reference source="USN" ref_id="USN-6663-3" ref_url="https://ubuntu.com/security/notices/USN-6663-3"/>
+                <description>USN-6663-1 provided a security update for OpenSSL.</description>
+                <advisory from="security@ubuntu.com">
+                    <severity>None</severity>
+                    <issued date="2024-05-23"/>
+                    <bug>https://launchpad.net/bugs/2054090</bug>
+                </advisory>
+            </metadata>
+            <criteria>
+                <extend_definition definition_ref="oval:com.ubuntu.noble:def:100" comment="Ubuntu 24.04 LTS (noble) is installed." applicability_check="true" />
+                <criteria operator="OR">
+                    <criterion test_ref="oval:com.ubuntu.noble:tst:666330000000" comment="Long Term Release" />
+                </criteria>
+            </criteria>
+        </definition>
+
+        <!-- USN-6673-3: class=patch with one CVE reference — should produce statements. -->
+        <definition id="oval:com.ubuntu.noble:def:66733000000" version="1" class="patch">
+            <metadata>
+                <title>USN-6673-3 -- python-cryptography vulnerability</title>
+                <affected family="unix">
+                    <platform>Ubuntu 24.04 LTS</platform>
+                </affected>
+                <reference source="USN" ref_id="USN-6673-3" ref_url="https://ubuntu.com/security/notices/USN-6673-3"/>
+                <reference source="CVE" ref_id="CVE-2024-26130" ref_url="https://ubuntu.com/security/CVE-2024-26130"/>
+                <description>USN-6673-1 provided a security update for python-cryptography.</description>
+                <advisory from="security@ubuntu.com">
+                    <severity>Medium</severity>
+                    <issued date="2024-05-27"/>
+                    <cve href="https://ubuntu.com/security/CVE-2024-26130" priority="medium" public="20240221" cvss_score="7.5" cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H" cvss_severity="high" usns="6673-1,6673-3">CVE-2024-26130</cve>
+                </advisory>
+            </metadata>
+            <criteria>
+                <extend_definition definition_ref="oval:com.ubuntu.noble:def:100" comment="Ubuntu 24.04 LTS (noble) is installed." applicability_check="true" />
+                <criteria operator="OR">
+                    <criterion test_ref="oval:com.ubuntu.noble:tst:667330000000" comment="Long Term Release" />
+                </criteria>
+            </criteria>
+        </definition>
+
+    </definitions>
+
+    <tests>
+        <ind:family_test id="oval:com.ubuntu.noble:tst:100" check="at least one" check_existence="at_least_one_exists" version="1" comment="Is the host part of the unix family?">
+            <ind:object object_ref="oval:com.ubuntu.noble:obj:100"/>
+            <ind:state state_ref="oval:com.ubuntu.noble:ste:100"/>
+        </ind:family_test>
+        <linux:dpkginfo_test id="oval:com.ubuntu.noble:tst:666330000000" version="1" check_existence="at_least_one_exists" check="at least one" comment="Long Term Release">
+            <linux:object object_ref="oval:com.ubuntu.noble:obj:666330000000"/>
+            <linux:state state_ref="oval:com.ubuntu.noble:ste:666330000000"/>
+        </linux:dpkginfo_test>
+        <linux:dpkginfo_test id="oval:com.ubuntu.noble:tst:667330000000" version="1" check_existence="at_least_one_exists" check="at least one" comment="Long Term Release">
+            <linux:object object_ref="oval:com.ubuntu.noble:obj:667330000000"/>
+            <linux:state state_ref="oval:com.ubuntu.noble:ste:667330000000"/>
+        </linux:dpkginfo_test>
+    </tests>
+
+    <objects>
+        <ind:family_object id="oval:com.ubuntu.noble:obj:100" version="1" comment="The singleton family object."/>
+        <linux:dpkginfo_object id="oval:com.ubuntu.noble:obj:666330000000" version="1" comment="Long Term Release">
+            <linux:name var_ref="oval:com.ubuntu.noble:var:666330000000" var_check="at least one" />
+        </linux:dpkginfo_object>
+        <linux:dpkginfo_object id="oval:com.ubuntu.noble:obj:667330000000" version="1" comment="Long Term Release">
+            <linux:name var_ref="oval:com.ubuntu.noble:var:667330000000" var_check="at least one" />
+        </linux:dpkginfo_object>
+    </objects>
+
+    <states>
+        <ind:family_state id="oval:com.ubuntu.noble:ste:100" version="1" comment="The singleton family object.">
+            <ind:family>unix</ind:family>
+        </ind:family_state>
+        <linux:dpkginfo_state id="oval:com.ubuntu.noble:ste:666330000000" version="1" comment="Long Term Release">
+            <linux:evr datatype="debian_evr_string" operation="less than">0:3.0.13-0ubuntu3.1</linux:evr>
+        </linux:dpkginfo_state>
+        <linux:dpkginfo_state id="oval:com.ubuntu.noble:ste:667330000000" version="1" comment="Long Term Release">
+            <linux:evr datatype="debian_evr_string" operation="less than">0:41.0.7-4ubuntu0.1</linux:evr>
+        </linux:dpkginfo_state>
+    </states>
+
+    <variables>
+        <constant_variable id="oval:com.ubuntu.noble:var:666330000000" version="1" datatype="string" comment="Long Term Release">
+            <value>libssl3t64</value>
+            <value>libssl-dev</value>
+            <value>openssl</value>
+            <value>libssl-doc</value>
+        </constant_variable>
+        <constant_variable id="oval:com.ubuntu.noble:var:667330000000" version="1" datatype="string" comment="Long Term Release">
+            <value>python3-cryptography</value>
+            <value>python-cryptography-doc</value>
+        </constant_variable>
+    </variables>
+
+</oval_definitions>

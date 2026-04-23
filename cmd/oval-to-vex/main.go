@@ -1,15 +1,17 @@
-// Command oval-to-vex reads a Red Hat OVAL XML document from stdin and
-// writes the VEX-shaped statements as JSON to stdout. Intended for local
+// Command oval-to-vex reads an OVAL XML document from stdin and writes
+// the VEX-shaped statements as JSON to stdout. Intended for local
 // smoke-testing the library; production consumers should import the
 // translator package directly.
 //
-// Example:
+// Examples:
 //
 //	bunzip2 -c rhel-9.6-eus.oval.xml.bz2 | oval-to-vex > statements.json
+//	bunzip2 -c oci.com.ubuntu.noble.usn.oval.xml.bz2 | oval-to-vex -vendor=ubuntu > statements.json
 package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 
@@ -17,7 +19,22 @@ import (
 )
 
 func main() {
-	stmts, err := translator.FromRedHatOVAL(os.Stdin)
+	vendor := flag.String("vendor", "redhat", "OVAL vendor: redhat or ubuntu")
+	flag.Parse()
+
+	var (
+		stmts []translator.Statement
+		err   error
+	)
+	switch *vendor {
+	case "redhat":
+		stmts, err = translator.FromRedHatOVAL(os.Stdin)
+	case "ubuntu":
+		stmts, err = translator.FromUbuntuOVAL(os.Stdin)
+	default:
+		fmt.Fprintf(os.Stderr, "error: unknown vendor %q (want redhat or ubuntu)\n", *vendor)
+		os.Exit(2)
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
