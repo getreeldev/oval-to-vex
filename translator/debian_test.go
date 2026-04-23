@@ -22,12 +22,12 @@ func TestFromDebianOVAL_Fixture(t *testing.T) {
 	}
 
 	// Fixture has 4 definitions:
-	//   1. CVE-2021-44228 on apache-log4j2 (vulnerability + fix) → 1 statement
-	//   2. DSA-5000-1 / CVE-2022-0778 on openssl (patch + fix)    → 1 statement
-	//   3. CVE-2026-0001 unfixed (no dpkginfo test resolvable)    → skipped
+	//   1. CVE-2021-44228 on apache-log4j2 (vulnerability + fix) → 1 fixed statement
+	//   2. DSA-5000-1 / CVE-2022-0778 on openssl (patch + fix)    → 1 fixed statement
+	//   3. CVE-2026-0001 on curl (vulnerability + no test)        → 1 affected statement
 	//   4. CVE-2026-0002 unrecognized platform                    → skipped
-	if len(stmts) != 2 {
-		t.Fatalf("expected 2 statements, got %d: %+v", len(stmts), stmts)
+	if len(stmts) != 3 {
+		t.Fatalf("expected 3 statements, got %d: %+v", len(stmts), stmts)
 	}
 
 	for i, s := range stmts {
@@ -40,8 +40,8 @@ func TestFromDebianOVAL_Fixture(t *testing.T) {
 		if s.Vendor != "debian" {
 			t.Errorf("stmt %d: Vendor %q, want debian", i, s.Vendor)
 		}
-		if s.Status != "fixed" {
-			t.Errorf("stmt %d: Status %q, want fixed", i, s.Status)
+		if s.Status != "fixed" && s.Status != "affected" {
+			t.Errorf("stmt %d: Status %q, want fixed or affected", i, s.Status)
 		}
 		if !strings.Contains(s.ProductID, "?distro=debian-12") {
 			t.Errorf("stmt %d: ProductID %q must carry distro=debian-12", i, s.ProductID)
@@ -51,24 +51,43 @@ func TestFromDebianOVAL_Fixture(t *testing.T) {
 		}
 	}
 
-	// Both expected packages must be present with their fix versions.
-	wantByPackage := map[string]string{
+	// Expected: two fixed statements (with versions) and one affected (no version).
+	wantFixed := map[string]string{
 		"pkg:deb/debian/apache-log4j2?distro=debian-12": "0:2.15.0-1",
 		"pkg:deb/debian/openssl?distro=debian-12":       "0:3.0.2-2",
 	}
-	got := make(map[string]string, len(stmts))
+	wantAffected := "pkg:deb/debian/curl?distro=debian-12"
+	var sawAffected bool
 	for _, s := range stmts {
-		got[s.ProductID] = s.Version
+		switch s.Status {
+		case "fixed":
+			wantVer, ok := wantFixed[s.ProductID]
+			if !ok {
+				t.Errorf("unexpected fixed statement for %q", s.ProductID)
+				continue
+			}
+			if s.Version != wantVer {
+				t.Errorf("%q: got version %q, want %q", s.ProductID, s.Version, wantVer)
+			}
+			delete(wantFixed, s.ProductID)
+		case "affected":
+			if s.ProductID != wantAffected {
+				t.Errorf("affected: got %q, want %q", s.ProductID, wantAffected)
+			}
+			if s.Version != "" {
+				t.Errorf("affected statements must have empty version, got %q", s.Version)
+			}
+			if s.CVE != "CVE-2026-0001" {
+				t.Errorf("affected CVE: got %q, want CVE-2026-0001", s.CVE)
+			}
+			sawAffected = true
+		}
 	}
-	for pkg, wantVer := range wantByPackage {
-		gotVer, ok := got[pkg]
-		if !ok {
-			t.Errorf("missing statement for %q", pkg)
-			continue
-		}
-		if gotVer != wantVer {
-			t.Errorf("%q: got version %q, want %q", pkg, gotVer, wantVer)
-		}
+	for missing := range wantFixed {
+		t.Errorf("missing fixed statement for %q", missing)
+	}
+	if !sawAffected {
+		t.Errorf("missing affected statement for unpatched-CVE definition")
 	}
 }
 

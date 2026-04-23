@@ -23,12 +23,14 @@ var debianPlatformRe = regexp.MustCompile(`Debian\s+GNU/Linux\s+(\d+)`)
 // state → evr). Statements emit PURLs in the form
 // pkg:deb/debian/<name>?distro=debian-<N>.
 //
-// VEX status mapping:
+// VEX status mapping (mirror model — report what the vendor publishes,
+// let consumers decide how to use it):
 //   - class="patch" or class="vulnerability" with a dpkginfo evr bound
 //     → status="fixed", version=<evr> (the bound is the fix boundary)
-//   - class="vulnerability" with no dpkginfo evr bound → skipped
-//     (unpatched CVE record — consumers already flag CVEs by default; an
-//     "affected" statement without a fix version isn't actionable)
+//   - class="vulnerability" with no resolvable dpkginfo test
+//     → status="affected", version="" (unpatched CVE record — Debian's
+//     tracker knows about it, no patch shipped yet). Keyed on the
+//     <product> name from metadata's <affected> block.
 //   - other classes → skipped
 //
 // Definitions whose metadata/platform text does not match the expected
@@ -80,6 +82,7 @@ func fromDebianDocument(doc *oval.DebianDocument) []Statement {
 		// interleaved with a release-install check (textfilecontent54)
 		// and an architecture check (uname) — both are not in our
 		// dpkginfo test map, so they're skipped naturally.
+		emittedFixed := false
 		for _, ref := range collectDebianTestRefs(&def.Criteria) {
 			objID, hasObj := testObj[ref]
 			if !hasObj {
@@ -99,6 +102,28 @@ func fromDebianDocument(doc *oval.DebianDocument) []Statement {
 					Version:   fixedVersion,
 					IDType:    "purl",
 					Status:    "fixed",
+					Vendor:    "debian",
+				})
+			}
+			emittedFixed = true
+		}
+
+		// No dpkginfo_test resolved → Debian's tracker has logged the
+		// CVE for this release but not yet shipped a fix. Emit as
+		// affected keyed on the <product> name from metadata.
+		if !emittedFixed && def.Class == "vulnerability" {
+			product := strings.TrimSpace(def.Metadata.Affected.Product)
+			if product == "" {
+				continue
+			}
+			id := "pkg:deb/debian/" + product + "?distro=debian-" + distroVersion
+			for _, cve := range cves {
+				out = append(out, Statement{
+					CVE:       cve,
+					ProductID: id,
+					BaseID:    id,
+					IDType:    "purl",
+					Status:    "affected",
 					Vendor:    "debian",
 				})
 			}

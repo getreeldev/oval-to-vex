@@ -56,10 +56,13 @@ type Metadata struct {
 	Description string      `xml:"description"`
 }
 
-// Affected declares the product family and list of platforms.
+// Affected declares the product family and list of platforms. The
+// Product child is populated by Debian's OVAL ("<product>openssl</product>"
+// naming the affected binary package); Red Hat and Ubuntu do not emit it.
 type Affected struct {
 	Family    string   `xml:"family,attr"`
 	Platforms []string `xml:"platform"`
+	Product   string   `xml:"product"`
 }
 
 // Reference is one external link. Red Hat uses source="RHSA" for errata

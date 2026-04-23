@@ -50,15 +50,16 @@
       </criteria>
     </definition>
 
-    <!-- class=vulnerability with no dpkginfo test resolvable (unpatched CVE) — should be skipped. -->
+    <!-- class=vulnerability with no dpkginfo test resolvable (unpatched CVE) — should emit affected keyed on <product>. -->
     <definition id="oval:org.debian:def:999999999999999999999999999999999999999" version="1" class="vulnerability">
       <metadata>
-        <title>CVE-2026-0001 unfixed-package</title>
+        <title>CVE-2026-0001 curl</title>
         <affected family="unix">
           <platform>Debian GNU/Linux 12</platform>
+          <product>curl</product>
         </affected>
         <reference source="CVE" ref_id="CVE-2026-0001" ref_url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-0001"/>
-        <description>Hypothetical unpatched CVE with no dpkginfo test reference.</description>
+        <description>Hypothetical unpatched CVE. Debian's tracker logs it but no fix is shipped yet.</description>
       </metadata>
       <criteria comment="Release section" operator="AND">
         <criterion test_ref="oval:org.debian.oval:tst:1" comment="Debian 12 is installed"/>
