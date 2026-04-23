@@ -5,8 +5,9 @@
 //
 // Examples:
 //
-//	bunzip2 -c rhel-9.6-eus.oval.xml.bz2 | oval-to-vex > statements.json
-//	bunzip2 -c oci.com.ubuntu.noble.usn.oval.xml.bz2 | oval-to-vex -vendor=ubuntu > statements.json
+//	bunzip2 -c rhel-9.6-eus.oval.xml.bz2                    | oval-to-vex > out.json
+//	bunzip2 -c com.ubuntu.noble.usn.oval.xml.bz2            | oval-to-vex -vendor=ubuntu > out.json
+//	bunzip2 -c oval-definitions-bookworm.xml.bz2            | oval-to-vex -vendor=debian > out.json
 package main
 
 import (
@@ -19,7 +20,7 @@ import (
 )
 
 func main() {
-	vendor := flag.String("vendor", "redhat", "OVAL vendor: redhat or ubuntu")
+	vendor := flag.String("vendor", "redhat", "OVAL vendor: redhat, ubuntu, or debian")
 	flag.Parse()
 
 	var (
@@ -31,8 +32,10 @@ func main() {
 		stmts, err = translator.FromRedHatOVAL(os.Stdin)
 	case "ubuntu":
 		stmts, err = translator.FromUbuntuOVAL(os.Stdin)
+	case "debian":
+		stmts, err = translator.FromDebianOVAL(os.Stdin)
 	default:
-		fmt.Fprintf(os.Stderr, "error: unknown vendor %q (want redhat or ubuntu)\n", *vendor)
+		fmt.Fprintf(os.Stderr, "error: unknown vendor %q (want redhat, ubuntu, or debian)\n", *vendor)
 		os.Exit(2)
 	}
 	if err != nil {
