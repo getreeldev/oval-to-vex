@@ -71,31 +71,7 @@ curl -sL https://www.debian.org/security/oval/oval-definitions-bookworm.xml.bz2 
 
 ## What's covered
 
-**Red Hat** (`FromRedHatOVAL`):
-- OVAL 5.10 / 5.11 `<oval_definitions>` parsing
-- One statement per `(CVE, CPE)` pair drawn from `<affected_cpe_list>`
-- `class="patch"` → `status=fixed`; `class="vulnerability"` → `status=affected`
-- CVE dedupe across `<reference>` and `<advisory>/<cve>` elements
-
-**Ubuntu** (`FromUbuntuOVAL`, added in v0.2.0):
-- One statement per `(CVE, binary package)` pair, resolved by walking `criteria → dpkginfo_test → (object → constant_variable)` for packages and `(test → state → evr)` for the fixed version
-- `class="patch"` → `status=fixed`. Ubuntu's USN feed is patches only; the CVE OVAL feed (for unfixed/affected) is a separate future adapter
-- Supported release codenames: `focal` (20.04), `jammy` (22.04), `noble` (24.04). Definitions for unsupported codenames are skipped
-- Statements emit PURL identifiers in the form `pkg:deb/ubuntu/<name>?distro=ubuntu-<version>`. The distro qualifier is part of the package identity — noble `openssl` and jammy `openssl` are distinct products
-- CVE dedupe across `<reference>` and `<advisory>/<cve>` elements, same as Red Hat
-- USNs with no CVE references (rare) are skipped — emitting USN-keyed statements is future work
-
-**Debian** (`FromDebianOVAL`, added in v0.2.1):
-- One statement per `(CVE, binary package)` pair. Each Debian definition targets exactly one package; the `dpkginfo_object` carries the binary name directly (no constant_variable indirection)
-- Distro version recovered from the `<platform>Debian GNU/Linux N</platform>` text in metadata — the OVAL ID namespace doesn't carry a codename. Per-file feeds keep one release per document
-- Both `class="patch"` (DSA records) and `class="vulnerability"` (per-CVE records) emit `status=fixed` with the dpkginfo `evr` bound as the fix version. Vulnerability records with no resolvable dpkginfo test (unpatched CVEs Debian's tracker knows about but hasn't shipped a fix for) are skipped — emitting `affected` statements without a fix version is not actionable for VEX consumers
-- Statements emit PURL identifiers in the form `pkg:deb/debian/<name>?distro=debian-<N>` (12, 11, 13, ...)
-
-## What's NOT covered yet
-
-- OVAL test / object / state applicability evaluation beyond what's needed to resolve package identity. The library extracts what the advisory declares; it doesn't evaluate whether a given host matches
-- SUSE, Alpine/Wolfi, Oracle/Alma/Rocky OVAL. The type set is vendor-scoped — add `FromAlpineOVAL` etc. in subsequent minor releases
-- Per-package version-range semantics with explicit "vulnerable" bounds. Current output carries the fixed version string; consumers do the version compare
+Red Hat (CPE-level, multi-stream EUS/AUS/E4S/SAP/HA/NFV), Ubuntu USN, and Debian Security Tracker feeds. Per-vendor parsing detail and what's out of scope: see [`docs/coverage.md`](docs/coverage.md).
 
 ## Statement shape
 
