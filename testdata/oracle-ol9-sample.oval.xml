@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<oval_definitions xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5" xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5" xmlns:oval-def="http://oval.mitre.org/XMLSchema/oval-definitions-5" xmlns:unix-def="http://oval.mitre.org/XMLSchema/oval-definitions-5#unix" xmlns:red-def="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" xmlns:ind-def="http://oval.mitre.org/XMLSchema/oval-definitions-5#independent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<generator>
+<oval:product_name>Oracle Errata System</oval:product_name>
+<oval:product_version>Oracle Linux</oval:product_version>
+<oval:schema_version>5.11</oval:schema_version>
+<oval:timestamp>2026-06-04T05:15:25</oval:timestamp>
+</generator>
+<definitions>
+
+<!-- Real ELSA-2026-50294, trimmed. Multi-platform (Oracle Linux 8 AND 9):
+     a multi-platform ELSA must emit one set of rows per platform. Two
+     packages (bpftool, kernel-uek), each with a version test AND a signature
+     test (same object, evr-less state) to prove the signature filter. -->
+<definition id="oval:com.oracle.elsa:def:202650294" version="501" class="patch">
+<metadata>
+<title>ELSA-2026-50294: Unbreakable Enterprise kernel security update (IMPORTANT)</title>
+<affected family="unix">
+<platform>Oracle Linux 8</platform>
+<platform>Oracle Linux 9</platform>
+</affected>
+<reference source="elsa" ref_id="ELSA-2026-50294" ref_url="https://linux.oracle.com/errata/ELSA-2026-50294.html"/>
+<reference source="CVE" ref_id="CVE-2025-38085" ref_url="https://linux.oracle.com/cve/CVE-2025-38085.html"/>
+<reference source="CVE" ref_id="CVE-2025-54518" ref_url="https://linux.oracle.com/cve/CVE-2025-54518.html"/>
+<description>The Unbreakable Enterprise kernel security update.</description>
+<advisory from="errata@oracle.com">
+<severity>IMPORTANT</severity>
+<rights>Copyright 2026 Oracle, Inc.</rights>
+<issued date="2026-06-04"/>
+<cve href="https://linux.oracle.com/cve/CVE-2025-38085.html">CVE-2025-38085</cve>
+<cve href="https://linux.oracle.com/cve/CVE-2025-54518.html">CVE-2025-54518</cve>
+</advisory>
+</metadata>
+<criteria operator="OR">
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294001" comment="Oracle Linux 8 is installed"/>
+<criteria operator="OR">
+<!-- aarch64 branch -->
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294002" comment="Oracle Linux arch is aarch64"/>
+<criteria operator="OR">
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294003" comment="bpftool is earlier than 0:5.15.0-321.202.5.el8uek"/>
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294004" comment="bpftool is signed with the Oracle Linux 8 key"/>
+</criteria>
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294005" comment="kernel-uek is earlier than 0:5.15.0-321.202.5.el8uek"/>
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294006" comment="kernel-uek is signed with the Oracle Linux 8 key"/>
+</criteria>
+</criteria>
+</criteria>
+<!-- x86_64 branch — references the SAME two package version tests again.
+     The walk must dedupe these on (name, evr), not emit them twice. -->
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294031" comment="Oracle Linux arch is x86_64"/>
+<criteria operator="OR">
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294003" comment="bpftool is earlier than 0:5.15.0-321.202.5.el8uek"/>
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294004" comment="bpftool is signed with the Oracle Linux 8 key"/>
+</criteria>
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294005" comment="kernel-uek is earlier than 0:5.15.0-321.202.5.el8uek"/>
+<criterion test_ref="oval:com.oracle.elsa:tst:202650294006" comment="kernel-uek is signed with the Oracle Linux 8 key"/>
+</criteria>
+</criteria>
+</criteria>
+</criteria>
+</criteria>
+</criteria>
+</definition>
+
+<!-- Real ELSA-2026-50120 shape (glibc), trimmed to a single Oracle Linux 9
+     platform. One stock glibc version test AND one Ksplice glibc version
+     test (its evr carries the "ksplice1" marker). The ksplice variant must
+     be filtered; the stock glibc must survive. Includes a signature test. -->
+<definition id="oval:com.oracle.elsa:def:202650120" version="501" class="patch">
+<metadata>
+<title>ELSA-2026-50120: glibc security update (MODERATE)</title>
+<affected family="unix">
+<platform>Oracle Linux 9</platform>
+</affected>
+<reference source="elsa" ref_id="ELSA-2026-50120" ref_url="https://linux.oracle.com/errata/ELSA-2026-50120.html"/>
+<reference source="CVE" ref_id="CVE-2026-00001" ref_url="https://linux.oracle.com/cve/CVE-2026-00001.html"/>
+<description>The glibc security update.</description>
+<advisory from="errata@oracle.com">
+<severity>MODERATE</severity>
+<issued date="2026-05-20"/>
+<cve href="https://linux.oracle.com/cve/CVE-2026-00001.html">CVE-2026-00001</cve>
+</advisory>
+</metadata>
+<criteria operator="OR">
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650120001" comment="Oracle Linux 9 is installed"/>
+<criteria operator="OR">
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650120002" comment="glibc is earlier than 2:2.34-231.0.1.el9_7.10"/>
+<criterion test_ref="oval:com.oracle.elsa:tst:202650120010" comment="glibc is signed with the Oracle Linux 9 key"/>
+</criteria>
+<criteria operator="AND">
+<criterion test_ref="oval:com.oracle.elsa:tst:202650120003" comment="glibc is earlier than 2:2.34-231.0.1.ksplice1.el9_7.10"/>
+<criterion test_ref="oval:com.oracle.elsa:tst:202650120005" comment="glibc is ksplice-based"/>
+</criteria>
+</criteria>
+</criteria>
+</criteria>
+</definition>
+
+</definitions>
+
+<tests>
+<!-- "is installed" gate: rpminfo_test pointing at a version-pattern state (no evr). -->
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294001" version="501" comment="Oracle Linux 8 is installed" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294001" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294003" />
+</rpminfo_test>
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650120001" version="501" comment="Oracle Linux 9 is installed" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650120001" />
+<state state_ref="oval:com.oracle.elsa:ste:202650120003" />
+</rpminfo_test>
+
+<!-- Arch gate tests: rpminfo_test pointing at an arch-pattern state (no evr). -->
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294002" version="501" comment="Oracle Linux arch is aarch64" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294001" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294010" />
+</rpminfo_test>
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294031" version="501" comment="Oracle Linux arch is x86_64" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294001" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294011" />
+</rpminfo_test>
+
+<!-- Package-version tests (evr-bearing states). -->
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294003" version="501" comment="bpftool is earlier than 0:5.15.0-321.202.5.el8uek" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294002" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294005" />
+</rpminfo_test>
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294005" version="501" comment="kernel-uek is earlier than 0:5.15.0-321.202.5.el8uek" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294003" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294005" />
+</rpminfo_test>
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650120002" version="501" comment="glibc is earlier than 2:2.34-231.0.1.el9_7.10" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650120002" />
+<state state_ref="oval:com.oracle.elsa:ste:202650120007" />
+</rpminfo_test>
+<!-- Ksplice variant version test: evr carries the "ksplice1" marker. -->
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650120003" version="501" comment="glibc is earlier than 2:2.34-231.0.1.ksplice1.el9_7.10" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650120002" />
+<state state_ref="oval:com.oracle.elsa:ste:202650120005" />
+</rpminfo_test>
+
+<!-- Signature tests: same object as the version test, evr-less state. -->
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294004" version="501" comment="bpftool is signed with the Oracle Linux 8 key" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294002" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294001" />
+</rpminfo_test>
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650294006" version="501" comment="kernel-uek is signed with the Oracle Linux 8 key" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650294003" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294001" />
+</rpminfo_test>
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650120010" version="501" comment="glibc is signed with the Oracle Linux 9 key" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650120002" />
+<state state_ref="oval:com.oracle.elsa:ste:202650294001" />
+</rpminfo_test>
+<!-- "glibc is ksplice-based": object check, evr-less state — dropped anyway. -->
+<rpminfo_test id="oval:com.oracle.elsa:tst:202650120005" version="501" comment="glibc is ksplice-based" check="at least one" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+<object object_ref="oval:com.oracle.elsa:obj:202650120002" />
+<state state_ref="oval:com.oracle.elsa:ste:202650120006" />
+</rpminfo_test>
+</tests>
+
+<objects>
+<rpminfo_object xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:obj:202650294001" version="501">
+<name>oraclelinux-release</name>
+</rpminfo_object>
+<rpminfo_object xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:obj:202650294002" version="501">
+<name>bpftool</name>
+</rpminfo_object>
+<rpminfo_object xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:obj:202650294003" version="501">
+<name>kernel-uek</name>
+</rpminfo_object>
+<rpminfo_object xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:obj:202650120001" version="501">
+<name>oraclelinux-release</name>
+</rpminfo_object>
+<rpminfo_object xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:obj:202650120002" version="501">
+<name>glibc</name>
+</rpminfo_object>
+</objects>
+
+<states>
+<!-- Signature state: signature_keyid only, no evr. -->
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650294001" version="501">
+<signature_keyid operation="equals">82562ea9ad986da3</signature_keyid>
+</rpminfo_state>
+<!-- "is installed" gate states: version pattern, no evr. -->
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650294003" version="501">
+<version operation="pattern match">^8</version>
+</rpminfo_state>
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650120003" version="501">
+<version operation="pattern match">^9</version>
+</rpminfo_state>
+<!-- Arch gate states: arch pattern, no evr. -->
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650294010" version="501">
+<arch operation="pattern match">aarch64</arch>
+</rpminfo_state>
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650294011" version="501">
+<arch operation="pattern match">x86_64</arch>
+</rpminfo_state>
+<!-- "ksplice-based" state: signature/keyid style, no evr. -->
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650120006" version="501">
+<signature_keyid operation="equals">f3b48fe4 ksplice</signature_keyid>
+</rpminfo_state>
+<!-- Version states (evr-bearing). -->
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650294005" version="501">
+<evr datatype="evr_string" operation="less than">0:5.15.0-321.202.5.el8uek</evr>
+</rpminfo_state>
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650120007" version="501">
+<evr datatype="evr_string" operation="less than">2:2.34-231.0.1.el9_7.10</evr>
+</rpminfo_state>
+<!-- Ksplice version state: evr carries the "ksplice1" marker → filtered. -->
+<rpminfo_state xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" id="oval:com.oracle.elsa:ste:202650120005" version="501">
+<evr datatype="evr_string" operation="less than">2:2.34-231.0.1.ksplice1.el9_7.10</evr>
+</rpminfo_state>
+</states>
+
+</oval_definitions>

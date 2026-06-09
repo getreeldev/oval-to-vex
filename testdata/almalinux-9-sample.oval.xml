@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='utf-8'?>
+<oval_definitions xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5" xmlns:unix-def="http://oval.mitre.org/XMLSchema/oval-definitions-5#unix" xmlns:red-def="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux" xmlns:ind-def="http://oval.mitre.org/XMLSchema/oval-definitions-5#independent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+  <generator>
+    <oval:product_name>AlmaLinux OS Errata System</oval:product_name>
+    <oval:product_version>0.0.1</oval:product_version>
+    <oval:schema_version>5.10</oval:schema_version>
+    <oval:timestamp>2026-06-07T22:39:07</oval:timestamp>
+  </generator>
+  <definitions>
+
+    <!-- Real ALSA-2025:11861 trimmed to two packages (kernel, perf), each with
+         its package-version test AND its signature test. Both packages share
+         the same fixed-evr state (real shape). The signature tests reference
+         the same objects as the version tests but an evr-less state, so they
+         must be dropped by the evr filter, not by the object. -->
+    <definition id="oval:org.almalinux.alsa:def:202511861" version="635" class="patch">
+      <metadata>
+        <title>ALSA-2025:11861: kernel security update (Moderate)</title>
+        <reference ref_id="CVE-2024-57980" source="CVE" ref_url="https://access.redhat.com/security/cve/CVE-2024-57980"/>
+        <reference ref_id="CVE-2025-21905" source="CVE" ref_url="https://access.redhat.com/security/cve/CVE-2025-21905"/>
+        <reference ref_id="RHSA-2025:11861" source="RHSA" ref_url="https://access.redhat.com/errata/RHSA-2025:11861"/>
+        <reference ref_id="ALSA-2025:11861" source="ALSA" ref_url="https://errata.almalinux.org/9/ALSA-2025-11861.html"/>
+        <description>The kernel packages contain the Linux kernel.</description>
+        <advisory from="packager@almalinux.org">
+          <severity>Moderate</severity>
+          <rights>Copyright 2025 AlmaLinux OS</rights>
+          <issued date="2025-07-28"/>
+          <updated date="2025-07-28"/>
+          <affected_cpe_list>
+            <cpe>cpe:/a:almalinux:almalinux:9</cpe>
+            <cpe>cpe:/o:almalinux:almalinux:9::baseos</cpe>
+          </affected_cpe_list>
+          <cve public="20250227" href="https://access.redhat.com/security/cve/CVE-2024-57980" impact="Moderate" cwe="CWE-415" cvss3="CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H">CVE-2024-57980</cve>
+          <cve public="20250401" href="https://access.redhat.com/security/cve/CVE-2025-21905" impact="Moderate" cwe="CWE-125" cvss3="CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:N/A:H">CVE-2025-21905</cve>
+        </advisory>
+      </metadata>
+      <criteria operator="OR">
+        <criterion test_ref="oval:org.almalinux.alba:tst:20225749024" comment="AlmaLinux must be installed"/>
+        <criteria operator="AND">
+          <criterion test_ref="oval:org.almalinux.alba:tst:20225749023" comment="AlmaLinux 9 is installed"/>
+          <criteria operator="OR">
+            <criteria operator="AND">
+              <criterion test_ref="oval:org.almalinux.alsa:tst:202511861001" comment="perf is earlier than 0:5.14.0-570.30.1.el9_6"/>
+              <criterion test_ref="oval:org.almalinux.alsa:tst:20225249054" comment="perf is signed with AlmaLinux OS 9 key"/>
+            </criteria>
+            <criteria operator="AND">
+              <criterion test_ref="oval:org.almalinux.alsa:tst:202511861005" comment="kernel is earlier than 0:5.14.0-570.30.1.el9_6"/>
+              <criterion test_ref="oval:org.almalinux.alsa:tst:20225214002" comment="kernel is signed with AlmaLinux OS 9 key"/>
+            </criteria>
+          </criteria>
+        </criteria>
+      </criteria>
+    </definition>
+
+    <!-- class=patch but no CVE reference at all — must be skipped (we key on CVE). -->
+    <definition id="oval:org.almalinux.alsa:def:202500000" version="1" class="patch">
+      <metadata>
+        <title>ALSA-2025:00000: docs-only update</title>
+        <reference ref_id="ALSA-2025:00000" source="ALSA" ref_url="https://errata.almalinux.org/9/ALSA-2025-00000.html"/>
+        <description>Documentation-only errata with no CVE.</description>
+        <advisory from="packager@almalinux.org">
+          <severity>None</severity>
+        </advisory>
+      </metadata>
+      <criteria operator="AND">
+        <criterion test_ref="oval:org.almalinux.alba:tst:20225749023" comment="AlmaLinux 9 is installed"/>
+      </criteria>
+    </definition>
+
+  </definitions>
+
+  <tests>
+    <!-- Gate tests are rpmverifyfile_test, NOT rpminfo_test — they never bind
+         to the translator's rpminfo test map. -->
+    <red-def:rpmverifyfile_test check="none satisfy" comment="AlmaLinux must be installed" id="oval:org.almalinux.alba:tst:20225749024" version="635">
+      <red-def:object object_ref="oval:org.almalinux.alba:obj:20225749012"/>
+      <red-def:state state_ref="oval:org.almalinux.alba:ste:20225749005"/>
+    </red-def:rpmverifyfile_test>
+    <red-def:rpmverifyfile_test check="at least one" comment="AlmaLinux 9 is installed" id="oval:org.almalinux.alba:tst:20225749023" version="635">
+      <red-def:object object_ref="oval:org.almalinux.alba:obj:20225749012"/>
+      <red-def:state state_ref="oval:org.almalinux.alba:ste:20225749006"/>
+    </red-def:rpmverifyfile_test>
+
+    <!-- Package-version tests: rpminfo_test → object(name) + state(evr). -->
+    <red-def:rpminfo_test check="at least one" comment="perf is earlier than 0:5.14.0-570.30.1.el9_6" id="oval:org.almalinux.alsa:tst:202511861001" version="1">
+      <red-def:object object_ref="oval:org.almalinux.alsa:obj:20225249027"/>
+      <red-def:state state_ref="oval:org.almalinux.alsa:ste:202511861001"/>
+    </red-def:rpminfo_test>
+    <red-def:rpminfo_test check="at least one" comment="kernel is earlier than 0:5.14.0-570.30.1.el9_6" id="oval:org.almalinux.alsa:tst:202511861005" version="1">
+      <red-def:object object_ref="oval:org.almalinux.alsa:obj:20225214001"/>
+      <red-def:state state_ref="oval:org.almalinux.alsa:ste:202511861001"/>
+    </red-def:rpminfo_test>
+
+    <!-- Signature tests: rpminfo_test, same OBJECT as the version test, but a
+         signature-only STATE (no evr). Must be dropped on the evr check. -->
+    <red-def:rpminfo_test check="at least one" comment="perf is signed with AlmaLinux OS 9 key" id="oval:org.almalinux.alsa:tst:20225249054" version="635">
+      <red-def:object object_ref="oval:org.almalinux.alsa:obj:20225249027"/>
+      <red-def:state state_ref="oval:org.almalinux.alba:ste:20225749002"/>
+    </red-def:rpminfo_test>
+    <red-def:rpminfo_test check="at least one" comment="kernel is signed with AlmaLinux OS 9 key" id="oval:org.almalinux.alsa:tst:20225214002" version="635">
+      <red-def:object object_ref="oval:org.almalinux.alsa:obj:20225214001"/>
+      <red-def:state state_ref="oval:org.almalinux.alba:ste:20225749002"/>
+    </red-def:rpminfo_test>
+  </tests>
+
+  <objects>
+    <red-def:rpminfo_object id="oval:org.almalinux.alsa:obj:20225249027" version="640">
+      <red-def:name>perf</red-def:name>
+    </red-def:rpminfo_object>
+    <red-def:rpminfo_object id="oval:org.almalinux.alsa:obj:20225214001" version="635">
+      <red-def:name>kernel</red-def:name>
+    </red-def:rpminfo_object>
+  </objects>
+
+  <states>
+    <!-- Version state: carries <evr> (and an <arch> we ignore). -->
+    <red-def:rpminfo_state id="oval:org.almalinux.alsa:ste:202511861001" version="1">
+      <red-def:arch operation="pattern match" datatype="string">ppc64le|aarch64|s390x|x86_64</red-def:arch>
+      <red-def:evr datatype="evr_string" operation="less than">0:5.14.0-570.30.1.el9_6</red-def:evr>
+    </red-def:rpminfo_state>
+    <!-- Signature state: <signature_keyid> only, no <evr>. -->
+    <red-def:rpminfo_state id="oval:org.almalinux.alba:ste:20225749002" version="635">
+      <red-def:signature_keyid operation="equals">d36cb86cb86b3716</red-def:signature_keyid>
+    </red-def:rpminfo_state>
+  </states>
+
+</oval_definitions>
