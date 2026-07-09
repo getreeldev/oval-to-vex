@@ -57,9 +57,9 @@ type DebianMetadata struct {
 // criterion, then nested architecture OR groupings containing the
 // package-version criterion.
 type DebianCriteria struct {
-	Operator   string             `xml:"operator,attr"`
-	Criteria   []DebianCriteria   `xml:"criteria"`
-	Criterions []DebianCriterion  `xml:"criterion"`
+	Operator   string            `xml:"operator,attr"`
+	Criteria   []DebianCriteria  `xml:"criteria"`
+	Criterions []DebianCriterion `xml:"criterion"`
 }
 
 // DebianCriterion references a test by ID.

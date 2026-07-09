@@ -87,9 +87,9 @@ type UbuntuCVE struct {
 // (the OS-installed applicability check) plus inner criteria containing
 // criterion test_refs to dpkginfo_test entries.
 type UbuntuCriteria struct {
-	Operator          string                  `xml:"operator,attr"`
-	Criteria          []UbuntuCriteria        `xml:"criteria"`
-	Criterions        []UbuntuCriterion       `xml:"criterion"`
+	Operator          string                   `xml:"operator,attr"`
+	Criteria          []UbuntuCriteria         `xml:"criteria"`
+	Criterions        []UbuntuCriterion        `xml:"criterion"`
 	ExtendDefinitions []UbuntuExtendDefinition `xml:"extend_definition"`
 }
 
@@ -119,7 +119,7 @@ type UbuntuTests struct {
 // object_ref (which dereferences to a package name set) and one state_ref
 // (which dereferences to a fixed evr).
 type UbuntuDpkginfoTest struct {
-	ID     string             `xml:"id,attr"`
+	ID     string                  `xml:"id,attr"`
 	Object UbuntuDpkginfoObjectRef `xml:"object"`
 	State  UbuntuDpkginfoStateRef  `xml:"state"`
 }
