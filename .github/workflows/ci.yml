@@ -50,6 +50,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
+          # The runner's cached toolchain can lag a patch release behind, and
+          # govulncheck scans the stdlib at the toolchain's own version — a
+          # stale cache fails the scan on already-fixed stdlib CVEs.
+          check-latest: true
       # The module is stdlib-only, so this mostly guards the toolchain's own
       # standard library (and any dependency someone adds later). Run as a
       # tool so it stays out of go.mod.
