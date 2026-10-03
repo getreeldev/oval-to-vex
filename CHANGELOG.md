@@ -2,7 +2,7 @@
 
 All notable changes to `oval-to-vex` are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the library is pre-1.0, so minor bumps may carry breaking changes. Per-parser extraction detail (and what's deliberately out of scope) lives in [`docs/coverage.md`](./docs/coverage.md).
 
-## [Unreleased]
+## [0.4.0] — Oracle packages under their own release, Debian open CVEs, Red Hat removed
 
 ### Fixed
 
@@ -12,6 +12,10 @@ All notable changes to `oval-to-vex` are documented here. Format loosely follows
 ### Removed
 
 - **`FromRedHatOVAL`**, `oval.DecodeRedHat` and the `RedHat*` types, and the CLI's `redhat` vendor, because Red Hat is deprecating its OVAL feed. The CLI has no default vendor any more: `-vendor` is required.
+
+### Changed
+
+- Requires Go 1.27.
 
 ## [0.3.0] — RPM-level OVAL parsers (AlmaLinux, Oracle Linux)
 
