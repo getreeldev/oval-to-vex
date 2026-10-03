@@ -10,10 +10,8 @@ import (
 // encode fix versions at the package level via rpminfo_test / rpminfo_object /
 // rpminfo_state — currently AlmaLinux (OVAL 5.10) and Oracle Linux (OVAL 5.11).
 //
-// Unlike RedHatDocument (which is CPE-only, reading just
-// <metadata>/<advisory>/<affected_cpe_list>), this carries the full
-// Tests/Objects/States sections so the translator can recover
-// (package name, fixed evr) pairs by walking the criteria tree:
+// It carries the full Tests/Objects/States sections so the translator can
+// recover (package name, fixed evr) pairs by walking the criteria tree:
 //
 //	criterion → rpminfo_test → (object → name) + (state → evr)
 //
@@ -59,8 +57,9 @@ type RpminfoDefinition struct {
 // <advisory> block. CVEs appear in two places that can overlap:
 // <reference source="CVE"> and <advisory>/<cve> — collectRpminfoCVEs reads
 // both and dedupes. The <platform> children of <affected> name the distro
-// release(s) (Oracle: "Oracle Linux 9"; AlmaLinux omits these — its release
-// comes from the caller).
+// release(s) (Oracle: "Oracle Linux 9"; AlmaLinux omits these). Neither
+// translator reads them: AlmaLinux's release comes from the caller, and
+// Oracle's from the release gate heading each branch of the criteria tree.
 type RpminfoMetadata struct {
 	Title       string          `xml:"title"`
 	Affected    Affected        `xml:"affected"`
@@ -91,8 +90,9 @@ type RpminfoCVE struct {
 // nest several levels: an outer OR over "<distro> N is installed" gates,
 // then per-arch OR groupings, each leaf an AND of a "<pkg> is earlier than
 // <evr>" criterion and a "<pkg> is signed with the <distro> key" criterion.
-// We flatten the whole tree and resolve every test_ref; non-version tests
-// (signature, arch, "is installed", ksplice gate) fall away when their
+// AlmaLinux flattens the whole tree; Oracle walks it per release gate,
+// because one ELSA carries a branch per release. Either way non-version
+// tests (signature, arch, "is installed", ksplice gate) fall away when their
 // resolved state has no <evr>.
 type RpminfoCriteria struct {
 	Operator   string             `xml:"operator,attr"`
@@ -158,11 +158,22 @@ type RpminfoStates struct {
 // against. A version test's state has <evr> (epoch:version-release,
 // operation "less than" → fixed at this evr). Signature tests'
 // states have <signature_keyid>; "is installed"/arch gate states have
-// <version> or <arch>. Only EVR is read; an empty EVR marks a non-version
-// state, which the translator drops.
+// <version> or <arch>. An empty EVR marks a non-version state, which the
+// translator drops. Version is read so Oracle's release gate
+// (oraclelinux-release, <version operation="pattern match">^9</version>)
+// can be recognised; a version test's state may carry a <version> too
+// (a stream pattern such as 5.15.0).
 type RpminfoState struct {
-	ID  string     `xml:"id,attr"`
-	EVR RpminfoEVR `xml:"evr"`
+	ID      string         `xml:"id,attr"`
+	EVR     RpminfoEVR     `xml:"evr"`
+	Version RpminfoVersion `xml:"version"`
+}
+
+// RpminfoVersion is a state's <version> bound. Operation is "pattern match"
+// in Oracle's data.
+type RpminfoVersion struct {
+	Operation string `xml:"operation,attr"`
+	Value     string `xml:",chardata"`
 }
 
 // RpminfoEVR is the epoch:version-release string. Datatype is "evr_string"

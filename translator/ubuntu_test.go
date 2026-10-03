@@ -118,7 +118,7 @@ func TestExtractUbuntuCodename(t *testing.T) {
 		{"oval:com.ubuntu.noble:def:66633000000", "noble"},
 		{"oval:com.ubuntu.jammy:tst:1", "jammy"},
 		{"oval:com.ubuntu.focal:obj:1", "focal"},
-		{"oval:redhat:def:1", ""},
+		{"oval:com.oracle.elsa:def:1", ""},
 		{"", ""},
 	}
 	for _, tc := range cases {

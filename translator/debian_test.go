@@ -91,6 +91,71 @@ func TestFromDebianOVAL_Fixture(t *testing.T) {
 	}
 }
 
+// TestFromDebianOVAL_OpenBoundIsAffected uses the live bookworm record for
+// CVE-2016-5416 in 389-ds-base, open per the Debian tracker. Debian encodes
+// "no fix yet" as a bound of 0:0; that is an affected package, not one fixed
+// at version 0:0.
+func TestFromDebianOVAL_OpenBoundIsAffected(t *testing.T) {
+	const doc = `<?xml version='1.0' encoding='UTF-8'?>
+<oval_definitions xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+  <definitions>
+    <definition id="oval:org.debian:def:308370225544215691963860905694509241784" version="1" class="vulnerability">
+      <metadata>
+        <title>CVE-2016-5416 389-ds-base</title>
+        <affected family="unix">
+          <platform>Debian GNU/Linux 12</platform>
+          <product>389-ds-base</product>
+        </affected>
+        <reference source="CVE" ref_id="CVE-2016-5416" ref_url="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5416"/>
+      </metadata>
+      <criteria comment="Release section" operator="AND">
+        <criterion test_ref="oval:org.debian.oval:tst:1" comment="Debian 12 is installed"/>
+        <criteria comment="Architecture section" operator="OR">
+          <criteria comment="Architecture independent section" operator="AND">
+            <criterion test_ref="oval:org.debian.oval:tst:2" comment="all architecture"/>
+            <criterion test_ref="oval:org.debian.oval:tst:9326" comment="389-ds-base DPKG is earlier than 0"/>
+          </criteria>
+        </criteria>
+      </criteria>
+    </definition>
+  </definitions>
+  <tests>
+    <dpkginfo_test id="oval:org.debian.oval:tst:9326" version="1" check="all" check_existence="at_least_one_exists" comment="389-ds-base is earlier than 0" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+      <object object_ref="oval:org.debian.oval:obj:1062"/>
+      <state state_ref="oval:org.debian.oval:ste:7151"/>
+    </dpkginfo_test>
+  </tests>
+  <objects>
+    <dpkginfo_object id="oval:org.debian.oval:obj:1062" version="1" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+      <name>389-ds-base</name>
+    </dpkginfo_object>
+  </objects>
+  <states>
+    <dpkginfo_state id="oval:org.debian.oval:ste:7151" version="1" xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5#linux">
+      <evr datatype="debian_evr_string" operation="less than">0:0</evr>
+    </dpkginfo_state>
+  </states>
+</oval_definitions>`
+
+	stmts, err := FromDebianOVAL(strings.NewReader(doc))
+	if err != nil {
+		t.Fatalf("FromDebianOVAL: %v", err)
+	}
+	if len(stmts) != 1 {
+		t.Fatalf("expected 1 statement, got %d: %+v", len(stmts), stmts)
+	}
+	s := stmts[0]
+	if s.CVE != "CVE-2016-5416" || s.ProductID != "pkg:deb/debian/389-ds-base?distro=debian-12" {
+		t.Errorf("got (%s, %s), want (CVE-2016-5416, pkg:deb/debian/389-ds-base?distro=debian-12)", s.CVE, s.ProductID)
+	}
+	if s.Status != "affected" {
+		t.Errorf("status %q, want affected (a 0:0 bound means no fix exists)", s.Status)
+	}
+	if s.Version != "" {
+		t.Errorf("version %q, want empty (0:0 is not a fix version)", s.Version)
+	}
+}
+
 func TestFromDebianOVAL_SkipsUnknownPlatform(t *testing.T) {
 	doc := &oval.DebianDocument{
 		Definitions: oval.DebianDefinitions{

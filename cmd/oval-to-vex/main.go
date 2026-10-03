@@ -5,7 +5,6 @@
 //
 // Examples:
 //
-//	bunzip2 -c rhel-9.6-eus.oval.xml.bz2                    | oval-to-vex > out.json
 //	bunzip2 -c com.ubuntu.noble.usn.oval.xml.bz2            | oval-to-vex -vendor=ubuntu > out.json
 //	bunzip2 -c oval-definitions-bookworm.xml.bz2            | oval-to-vex -vendor=debian > out.json
 //	bunzip2 -c org.almalinux.alsa-9.xml.bz2                 | oval-to-vex -vendor=almalinux -release=9 > out.json
@@ -22,7 +21,7 @@ import (
 )
 
 func main() {
-	vendor := flag.String("vendor", "redhat", "OVAL vendor: redhat, ubuntu, debian, almalinux, or oracle")
+	vendor := flag.String("vendor", "", "OVAL vendor (required): ubuntu, debian, almalinux, or oracle")
 	release := flag.String("release", "", "distro major version (required for -vendor=almalinux, e.g. 9)")
 	flag.Parse()
 
@@ -31,8 +30,6 @@ func main() {
 		err   error
 	)
 	switch *vendor {
-	case "redhat":
-		stmts, err = translator.FromRedHatOVAL(os.Stdin)
 	case "ubuntu":
 		stmts, err = translator.FromUbuntuOVAL(os.Stdin)
 	case "debian":
@@ -45,8 +42,11 @@ func main() {
 		stmts, err = translator.FromAlmaLinuxOVAL(os.Stdin, *release)
 	case "oracle":
 		stmts, err = translator.FromOracleOVAL(os.Stdin)
+	case "":
+		fmt.Fprintln(os.Stderr, "error: -vendor is required (ubuntu, debian, almalinux, or oracle)")
+		os.Exit(2)
 	default:
-		fmt.Fprintf(os.Stderr, "error: unknown vendor %q (want redhat, ubuntu, debian, almalinux, or oracle)\n", *vendor)
+		fmt.Fprintf(os.Stderr, "error: unknown vendor %q (want ubuntu, debian, almalinux, or oracle)\n", *vendor)
 		os.Exit(2)
 	}
 	if err != nil {

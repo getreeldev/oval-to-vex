@@ -8,13 +8,12 @@ import (
 
 // UbuntuDocument is the Ubuntu-specific OVAL document shape.
 //
-// Ubuntu OVAL differs structurally from Red Hat: package identity does not
-// live in the definition metadata. It must be resolved by walking
-// criteria → dpkginfo_test → dpkginfo_object → constant_variable to find
-// binary package names, and dpkginfo_test → dpkginfo_state to find the
-// fixed evr (epoch:version-release) string. So this Document type carries
-// the full Tests/Objects/States/Variables sections, unlike RedHatDocument
-// which only needs metadata.
+// Package identity does not live in Ubuntu's definition metadata. It must
+// be resolved by walking criteria → dpkginfo_test → dpkginfo_object →
+// constant_variable to find binary package names, and dpkginfo_test →
+// dpkginfo_state to find the fixed evr (epoch:version-release) string. So
+// this Document type carries the full Tests/Objects/States/Variables
+// sections.
 //
 // Use DecodeUbuntu to populate.
 type UbuntuDocument struct {

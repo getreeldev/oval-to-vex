@@ -11,8 +11,8 @@ import (
 // newer OVAL schema extensions don't trip parsing.
 func Decode(r io.Reader) (*Document, error) {
 	dec := xml.NewDecoder(r)
-	// Red Hat's OVAL feed uses UTF-8 but declares explicit namespaces on
-	// every element. Go's encoding/xml ignores namespaces by default,
+	// Vendor OVAL feeds declare explicit namespaces on every element.
+	// Go's encoding/xml ignores namespaces by default,
 	// matching fields on local element names — which is what we want.
 	var doc Document
 	if err := dec.Decode(&doc); err != nil {

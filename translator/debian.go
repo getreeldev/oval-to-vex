@@ -27,6 +27,8 @@ var debianPlatformRe = regexp.MustCompile(`Debian\s+GNU/Linux\s+(\d+)`)
 // let consumers decide how to use it):
 //   - class="patch" or class="vulnerability" with a dpkginfo evr bound
 //     → status="fixed", version=<evr> (the bound is the fix boundary)
+//   - a bound of 0:0 → status="affected", version="" ("less than 0:0" is
+//     how Debian encodes a CVE still open in the release: no fix exists)
 //   - class="vulnerability" with no resolvable dpkginfo test
 //     → status="affected", version="" (unpatched CVE record — Debian's
 //     tracker knows about it, no patch shipped yet). Keyed on the
@@ -82,7 +84,7 @@ func fromDebianDocument(doc *oval.DebianDocument) []Statement {
 		// interleaved with a release-install check (textfilecontent54)
 		// and an architecture check (uname) — both are not in our
 		// dpkginfo test map, so they're skipped naturally.
-		emittedFixed := false
+		emitted := false
 		for _, ref := range collectDebianTestRefs(&def.Criteria) {
 			objID, hasObj := testObj[ref]
 			if !hasObj {
@@ -92,26 +94,29 @@ func fromDebianDocument(doc *oval.DebianDocument) []Statement {
 			if name == "" {
 				continue
 			}
-			fixedVersion := stateEVR[testState[ref]]
+			version, status := stateEVR[testState[ref]], "fixed"
+			if strings.TrimSpace(version) == "0:0" { // open: no fix yet
+				version, status = "", "affected"
+			}
 			id := "pkg:deb/debian/" + name + "?distro=debian-" + distroVersion
 			for _, cve := range cves {
 				out = append(out, Statement{
 					CVE:       cve,
 					ProductID: id,
 					BaseID:    id,
-					Version:   fixedVersion,
+					Version:   version,
 					IDType:    "purl",
-					Status:    "fixed",
+					Status:    status,
 					Vendor:    "debian",
 				})
 			}
-			emittedFixed = true
+			emitted = true
 		}
 
 		// No dpkginfo_test resolved → Debian's tracker has logged the
 		// CVE for this release but not yet shipped a fix. Emit as
 		// affected keyed on the <product> name from metadata.
-		if !emittedFixed && def.Class == "vulnerability" {
+		if !emitted && def.Class == "vulnerability" {
 			product := strings.TrimSpace(def.Metadata.Affected.Product)
 			if product == "" {
 				continue

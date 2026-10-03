@@ -2,6 +2,17 @@
 
 All notable changes to `oval-to-vex` are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the library is pre-1.0, so minor bumps may carry breaking changes. Per-parser extraction detail (and what's deliberately out of scope) lives in [`docs/coverage.md`](./docs/coverage.md).
 
+## [Unreleased]
+
+### Fixed
+
+- **`FromOracleOVAL`** pairs each package with its own release. An ELSA that names several releases has one branch per release in its criteria tree, each headed by an "Oracle Linux N is installed" gate and carrying that release's `.elN` builds. The parser used to emit every package under every named platform, so OL9 rows carried OL8 and OL10 versions. It now reads the release from the gate above each version test, emits the package under that release only, and drops a version test that sits under no gate. The `<platform>` list is no longer read.
+- **`FromDebianOVAL`** reports an open CVE as open. Debian encodes a CVE with no fix in the release as a bound of `0:0`; the parser used to emit that as `status=fixed` at version `0:0`. It now emits `status=affected` with no version.
+
+### Removed
+
+- **`FromRedHatOVAL`**, `oval.DecodeRedHat` and the `RedHat*` types, and the CLI's `redhat` vendor, because Red Hat is deprecating its OVAL feed. The CLI has no default vendor any more: `-vendor` is required.
+
 ## [0.3.0] — RPM-level OVAL parsers (AlmaLinux, Oracle Linux)
 
 ### Added

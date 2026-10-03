@@ -15,8 +15,8 @@ type Statement struct {
 	// CVE is the canonical CVE identifier the statement applies to.
 	CVE string
 
-	// ProductID is the identifier the advisory targets. For Red Hat
-	// advisories this is a CPE 2.2 URI from <affected_cpe_list>.
+	// ProductID is the identifier the advisory targets: a PURL carrying
+	// the distro qualifier, e.g. pkg:rpm/oracle/glibc?distro=oracle-9.
 	ProductID string
 
 	// BaseID is ProductID normalized for indexing — PURLs stripped of
@@ -24,8 +24,7 @@ type Statement struct {
 	BaseID string
 
 	// Version is the patched or affected version when encoded in the
-	// OVAL definition. Empty for CPE-keyed statements produced by
-	// v0.1.0.
+	// OVAL definition. Empty for an affected statement with no fix.
 	Version string
 
 	// IDType is "cpe" or "purl".
@@ -35,11 +34,11 @@ type Statement struct {
 	Status string
 
 	// Justification, when present, explains a not_affected status
-	// (e.g. "vulnerable_code_not_present"). Red Hat OVAL rarely sets
-	// this; typically only for "will not fix" type records.
+	// (e.g. "vulnerable_code_not_present"). No OVAL parser sets it
+	// today.
 	Justification string
 
-	// Vendor is the advisory publisher, e.g. "redhat". Set when the
+	// Vendor is the advisory publisher, e.g. "oracle". Set when the
 	// source signals it; consumers may override.
 	Vendor string
 }

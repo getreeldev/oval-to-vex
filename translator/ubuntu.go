@@ -26,8 +26,8 @@ var codenameToVersion = map[string]string{
 // FromUbuntuOVAL parses an Ubuntu USN OVAL document from r and returns
 // the statements implied by its definitions.
 //
-// Ubuntu OVAL differs from Red Hat OVAL: package identity is not in the
-// definition metadata. It is resolved by walking
+// Package identity is not in Ubuntu's definition metadata. It is resolved
+// by walking
 // criteria → dpkginfo_test → (object → constant_variable) for the binary
 // package names and (state → evr) for the fixed version.
 //
@@ -150,7 +150,7 @@ func extractUbuntuCodename(id string) string {
 }
 
 // collectUbuntuCVEs gathers unique CVE IDs from an Ubuntu definition.
-// Ubuntu, like Red Hat, can put CVEs in two places that overlap:
+// Ubuntu can put CVEs in two places that overlap:
 //
 //   - <metadata>/<reference source="CVE">
 //   - <metadata>/<advisory>/<cve>

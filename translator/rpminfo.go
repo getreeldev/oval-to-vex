@@ -62,9 +62,10 @@ func newRpminfoResolver(doc *oval.RpminfoDocument) *rpminfoResolver {
 // skipKsplice, when true, additionally drops packages whose fixed evr
 // contains "ksplice" (Oracle ships Ksplice userspace variants in the same
 // errata; v1 keys/serves only the stock package versions). AlmaLinux passes
-// false.
+// false. Oracle does not flatten: it walks the tree per release gate (see
+// oraclePackagesByRelease) and applies the same rule through versionTest.
 //
-// The result is deduped on (name, evr) WITHIN a definition: both vendors
+// The result is deduped on (name, evr) WITHIN a definition: the feeds
 // reference the same package version test once per architecture branch in
 // their criteria tree (an aarch64 OR-group and an x86_64 OR-group, etc.), so
 // a naive flatten would yield one identical pair per arch. Architecture is
@@ -81,22 +82,10 @@ func (r *rpminfoResolver) packagesFor(def *oval.RpminfoDefinition, skipKsplice b
 	var out []rpminfoPackage
 	seen := make(map[rpminfoPackage]struct{})
 	for _, ref := range collectRpminfoTestRefs(&def.Criteria) {
-		objID, ok := r.testObj[ref]
+		pkg, ok := r.versionTest(ref, skipKsplice)
 		if !ok {
 			continue
 		}
-		name := r.objName[objID]
-		if name == "" {
-			continue
-		}
-		evr := r.stateEVR[r.testState[ref]]
-		if evr == "" {
-			continue // signature / arch / "is installed" gate — no fix version
-		}
-		if skipKsplice && strings.Contains(evr, "ksplice") {
-			continue
-		}
-		pkg := rpminfoPackage{Name: name, EVR: evr}
 		if _, dup := seen[pkg]; dup {
 			continue
 		}
@@ -104,6 +93,28 @@ func (r *rpminfoResolver) packagesFor(def *oval.RpminfoDefinition, skipKsplice b
 		out = append(out, pkg)
 	}
 	return out
+}
+
+// versionTest resolves one test_ref to its (name, evr) pair. ok is false
+// for anything that is not a version test — see packagesFor for the rule —
+// and, when skipKsplice is set, for a Ksplice variant.
+func (r *rpminfoResolver) versionTest(ref string, skipKsplice bool) (rpminfoPackage, bool) {
+	objID, ok := r.testObj[ref]
+	if !ok {
+		return rpminfoPackage{}, false
+	}
+	name := r.objName[objID]
+	if name == "" {
+		return rpminfoPackage{}, false
+	}
+	evr := r.stateEVR[r.testState[ref]]
+	if evr == "" {
+		return rpminfoPackage{}, false // signature / arch / "is installed" gate — no fix version
+	}
+	if skipKsplice && strings.Contains(evr, "ksplice") {
+		return rpminfoPackage{}, false
+	}
+	return rpminfoPackage{Name: name, EVR: evr}, true
 }
 
 // collectRpminfoTestRefs flattens a (deeply nested) criteria tree to the
@@ -129,8 +140,8 @@ func collectRpminfoTestRefs(c *oval.RpminfoCriteria) []string {
 
 // collectRpminfoCVEs gathers unique CVE IDs from an RPM-level definition,
 // reading both <metadata>/<reference source="CVE"> and
-// <metadata>/<advisory>/<cve> (which overlap) and deduping by ID. Mirrors
-// collectRedHatCVEs — AlmaLinux and Oracle inherit Red Hat's advisory shape.
+// <metadata>/<advisory>/<cve> (which overlap) and deduping by ID. AlmaLinux
+// and Oracle share this advisory shape.
 func collectRpminfoCVEs(def *oval.RpminfoDefinition) []string {
 	seen := make(map[string]struct{})
 	var out []string

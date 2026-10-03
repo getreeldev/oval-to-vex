@@ -3,6 +3,7 @@ package translator
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -23,10 +24,10 @@ func TestFromOracleOVAL_Fixture(t *testing.T) {
 
 	// Fixture:
 	//   def 1 (ELSA multi-platform OL8+OL9): bpftool + kernel-uek, 2 CVEs,
-	//     emitted per platform = 2 pkgs × 2 CVEs × 2 platforms = 8. Each
-	//     package version test is referenced under BOTH an aarch64 and an
-	//     x86_64 branch (as in real Oracle data); the walk must dedupe on
-	//     (name, evr) so this stays 8, not 16.
+	//     one branch per release with its own versions = 2 pkgs × 2 CVEs ×
+	//     2 releases = 8. Each package version test is referenced under BOTH
+	//     an aarch64 and an x86_64 branch (as in real Oracle data); the walk
+	//     must dedupe on (release, name, evr) so this stays 8, not 16.
 	//   def 2 (glibc, OL9 only): stock glibc survives, ksplice variant
 	//     filtered, 1 CVE = 1.
 	//   Signature + arch + "ksplice-based" tests must not emit. Total = 9.
@@ -66,7 +67,7 @@ func TestFromOracleOVAL_Fixture(t *testing.T) {
 		}
 	}
 
-	// A multi-platform ELSA must emit per platform: the OL9 distro qualifier
+	// A multi-release ELSA must emit per release: both distro qualifiers
 	// must be present.
 	var sawOL9, sawOL8 bool
 	for _, s := range stmts {
@@ -84,22 +85,35 @@ func TestFromOracleOVAL_Fixture(t *testing.T) {
 		t.Error("multi-platform ELSA did not emit the OL8 rows (distro=oracle-8)")
 	}
 
-	// Known (CVE, package, evr) tuple with epoch preserved. kernel-uek was
-	// gated by a signature test — its presence proves the signature filter
-	// works on evr, not the object.
-	const wantEVR = "0:5.15.0-321.202.5.el8uek"
-	wantID := "pkg:rpm/oracle/kernel-uek?distro=oracle-9"
-	var foundKernel bool
-	for _, s := range stmts {
-		if s.CVE == "CVE-2025-54518" && s.ProductID == wantID {
-			foundKernel = true
-			if s.Version != wantEVR {
-				t.Errorf("%q: version %q, want %q (epoch must be preserved)", wantID, s.Version, wantEVR)
+	// Each release carries its own branch's evr, epoch preserved: OL9's
+	// kernel-uek is fixed at the el9uek build, OL8's at the el8uek one.
+	// kernel-uek was gated by a signature test — its presence proves the
+	// signature filter works on evr, not the object.
+	wantKernel := map[string]string{
+		"pkg:rpm/oracle/kernel-uek?distro=oracle-9": "0:5.15.0-321.202.5.el9uek",
+		"pkg:rpm/oracle/kernel-uek?distro=oracle-8": "0:5.15.0-321.202.5.el8uek",
+	}
+	for wantID, wantEVR := range wantKernel {
+		var found bool
+		for _, s := range stmts {
+			if s.CVE == "CVE-2025-54518" && s.ProductID == wantID {
+				found = true
+				if s.Version != wantEVR {
+					t.Errorf("%q: version %q, want %q (epoch must be preserved)", wantID, s.Version, wantEVR)
+				}
 			}
 		}
+		if !found {
+			t.Errorf("missing expected statement for CVE-2025-54518 / %q", wantID)
+		}
 	}
-	if !foundKernel {
-		t.Errorf("missing expected statement for CVE-2025-54518 / %q", wantID)
+
+	// No release may carry another release's build.
+	for _, s := range stmts {
+		release := s.ProductID[strings.Index(s.ProductID, "?distro=oracle-")+len("?distro=oracle-"):]
+		if !strings.Contains(s.Version, ".el"+release) {
+			t.Errorf("%s carries %q, not an el%s build", s.ProductID, s.Version, release)
+		}
 	}
 
 	// Stock glibc must survive; its ksplice sibling must be skipped. No
@@ -121,50 +135,124 @@ func TestFromOracleOVAL_Fixture(t *testing.T) {
 	}
 }
 
-func TestExtractOracleVersions(t *testing.T) {
-	cases := []struct {
-		platforms []string
-		want      []string
-	}{
-		{[]string{"Oracle Linux 9"}, []string{"9"}},
-		{[]string{"Oracle Linux 8", "Oracle Linux 9"}, []string{"8", "9"}},
-		{[]string{"Oracle Linux 7"}, []string{"7"}},
-		{[]string{"Debian GNU/Linux 12"}, nil},
-		{[]string{}, nil},
-		// Dedupe identical platforms.
-		{[]string{"Oracle Linux 9", "Oracle Linux 9"}, []string{"9"}},
+// oracleBranch is one release branch of a synthetic ELSA: the release its
+// gate names ("" for a branch with no gate) and the (name, evr) version
+// tests under it. A state may also carry a stream pattern (stream), as live
+// version states do ("5.15.0", `^1\.26\.`).
+type oracleBranch struct {
+	release string
+	tests   []oracleVersionTest
+}
+
+type oracleVersionTest struct {
+	name, evr, stream string
+}
+
+// oracleDoc builds one ELSA definition naming every platform in platforms,
+// with one AND branch per oracleBranch: the release gate (when set) beside
+// an arch gate and an OR over the version tests, the shape of the live
+// feed.
+func oracleDoc(platforms []string, branches ...oracleBranch) *oval.RpminfoDocument {
+	doc := &oval.RpminfoDocument{}
+	doc.Objects.Objects = append(doc.Objects.Objects, oval.RpminfoObject{ID: "obj:release", Name: "oraclelinux-release"})
+	doc.States.States = append(doc.States.States, oval.RpminfoState{ID: "ste:arch"})
+	doc.Tests.Tests = append(doc.Tests.Tests, oval.RpminfoTest{ID: "tst:arch", Object: oval.RpminfoObjectRef{Ref: "obj:release"}, State: oval.RpminfoStateRef{Ref: "ste:arch"}})
+
+	def := oval.RpminfoDefinition{
+		ID:    "oval:com.oracle.elsa:def:1",
+		Class: "patch",
+		Metadata: oval.RpminfoMetadata{
+			Affected:   oval.Affected{Platforms: platforms},
+			References: []oval.Reference{{RefID: "CVE-2024-1", Source: "CVE"}},
+		},
+		Criteria: oval.RpminfoCriteria{Operator: "OR"},
 	}
-	for _, tc := range cases {
-		got := extractOracleVersions(tc.platforms)
-		if len(got) != len(tc.want) {
-			t.Errorf("extractOracleVersions(%v) = %v, want %v", tc.platforms, got, tc.want)
-			continue
+	n := 0
+	id := func(kind string) string { n++; return kind + ":" + strconv.Itoa(n) }
+	for _, b := range branches {
+		branch := oval.RpminfoCriteria{Operator: "AND"}
+		if b.release != "" {
+			ste, tst := id("ste"), id("tst")
+			doc.States.States = append(doc.States.States, oval.RpminfoState{ID: ste, Version: oval.RpminfoVersion{Operation: "pattern match", Value: "^" + b.release}})
+			doc.Tests.Tests = append(doc.Tests.Tests, oval.RpminfoTest{ID: tst, Object: oval.RpminfoObjectRef{Ref: "obj:release"}, State: oval.RpminfoStateRef{Ref: ste}})
+			branch.Criterions = append(branch.Criterions, oval.RpminfoCriterion{TestRef: tst})
 		}
-		for i := range tc.want {
-			if got[i] != tc.want[i] {
-				t.Errorf("extractOracleVersions(%v)[%d] = %q, want %q", tc.platforms, i, got[i], tc.want[i])
+		arch := oval.RpminfoCriteria{Operator: "AND", Criterions: []oval.RpminfoCriterion{{TestRef: "tst:arch"}}}
+		pkgs := oval.RpminfoCriteria{Operator: "OR"}
+		for _, vt := range b.tests {
+			obj, ste, tst := id("obj"), id("ste"), id("tst")
+			doc.Objects.Objects = append(doc.Objects.Objects, oval.RpminfoObject{ID: obj, Name: vt.name})
+			state := oval.RpminfoState{ID: ste, EVR: oval.RpminfoEVR{Datatype: "evr_string", Operation: "less than", Value: vt.evr}}
+			if vt.stream != "" {
+				state.Version = oval.RpminfoVersion{Operation: "pattern match", Value: vt.stream}
 			}
+			doc.States.States = append(doc.States.States, state)
+			doc.Tests.Tests = append(doc.Tests.Tests, oval.RpminfoTest{ID: tst, Object: oval.RpminfoObjectRef{Ref: obj}, State: oval.RpminfoStateRef{Ref: ste}})
+			pkgs.Criteria = append(pkgs.Criteria, oval.RpminfoCriteria{Operator: "AND", Criterions: []oval.RpminfoCriterion{{TestRef: tst}}})
+		}
+		arch.Criteria = []oval.RpminfoCriteria{pkgs}
+		branch.Criteria = []oval.RpminfoCriteria{{Operator: "OR", Criteria: []oval.RpminfoCriteria{arch}}}
+		def.Criteria.Criteria = append(def.Criteria.Criteria, branch)
+	}
+	doc.Definitions.Definitions = []oval.RpminfoDefinition{def}
+	return doc
+}
+
+// TestFromOracleDocument_EachReleaseGetsItsOwnVersions: an ELSA naming OL8,
+// OL9 and OL10 fixes each release at its own .elN evr. Every statement must
+// carry the evr of the branch its release gate heads, and no other.
+func TestFromOracleDocument_EachReleaseGetsItsOwnVersions(t *testing.T) {
+	doc := oracleDoc([]string{"Oracle Linux 8", "Oracle Linux 9", "Oracle Linux 10"},
+		oracleBranch{"8", []oracleVersionTest{
+			{"kernel-uek", "0:5.15.0-321.202.5.el8uek", "5.15.0"},
+			{"cri-o", "0:1.26.4-2.el8", `^1\.26\.`},
+		}},
+		oracleBranch{"9", []oracleVersionTest{
+			{"kernel-uek", "0:5.15.0-321.202.5.el9uek", "5.15.0"},
+			{"cri-o", "0:1.26.4-2.el9", `^1\.26\.`},
+		}},
+		oracleBranch{"10", []oracleVersionTest{
+			{"kernel-uek", "0:6.12.0-206.104.4.el10uek", ""},
+		}},
+	)
+	got := make(map[string]string)
+	for _, s := range fromOracleDocument(doc) {
+		if prev, dup := got[s.ProductID]; dup {
+			t.Errorf("%s emitted twice (%s and %s)", s.ProductID, prev, s.Version)
+		}
+		got[s.ProductID] = s.Version
+	}
+	want := map[string]string{
+		"pkg:rpm/oracle/kernel-uek?distro=oracle-8":  "0:5.15.0-321.202.5.el8uek",
+		"pkg:rpm/oracle/cri-o?distro=oracle-8":       "0:1.26.4-2.el8",
+		"pkg:rpm/oracle/kernel-uek?distro=oracle-9":  "0:5.15.0-321.202.5.el9uek",
+		"pkg:rpm/oracle/cri-o?distro=oracle-9":       "0:1.26.4-2.el9",
+		"pkg:rpm/oracle/kernel-uek?distro=oracle-10": "0:6.12.0-206.104.4.el10uek",
+	}
+	if len(got) != len(want) {
+		t.Errorf("got %d products %v, want %d %v", len(got), got, len(want), want)
+	}
+	for id, evr := range want {
+		if got[id] != evr {
+			t.Errorf("%s: version %q, want %q", id, got[id], evr)
 		}
 	}
 }
 
-func TestFromOracleDocument_SkipsUnknownPlatform(t *testing.T) {
-	doc := &oval.RpminfoDocument{
-		Definitions: oval.RpminfoDefinitions{
-			Definitions: []oval.RpminfoDefinition{
-				{
-					ID:    "oval:com.oracle.elsa:def:1",
-					Class: "patch",
-					Metadata: oval.RpminfoMetadata{
-						Affected:   oval.Affected{Platforms: []string{"Something Else 9"}},
-						References: []oval.Reference{{RefID: "CVE-2024-1", Source: "CVE"}},
-					},
-				},
-			},
-		},
+// TestFromOracleDocument_DropsUngatedTests: a version test under no release
+// gate has no release, so it is dropped, even though the definition's
+// <platform> names a release. The gated branch beside it still emits.
+func TestFromOracleDocument_DropsUngatedTests(t *testing.T) {
+	doc := oracleDoc([]string{"Oracle Linux 9"},
+		oracleBranch{"", []oracleVersionTest{{"glibc", "2:2.34-231.0.1.el9_7.10", ""}}},
+		oracleBranch{"9", []oracleVersionTest{{"bpftool", "0:5.15.0-321.202.5.el9uek", ""}}},
+	)
+	stmts := fromOracleDocument(doc)
+	if len(stmts) != 1 {
+		t.Fatalf("expected 1 statement (the gated bpftool), got %d: %+v", len(stmts), stmts)
 	}
-	if got := fromOracleDocument(doc); len(got) != 0 {
-		t.Errorf("expected 0 statements for unknown platform, got %d", len(got))
+	if stmts[0].ProductID != "pkg:rpm/oracle/bpftool?distro=oracle-9" {
+		t.Errorf("got %s, want pkg:rpm/oracle/bpftool?distro=oracle-9", stmts[0].ProductID)
 	}
 }
 
